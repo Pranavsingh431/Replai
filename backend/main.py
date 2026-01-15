@@ -993,27 +993,28 @@ def get_products():
 @app.post("/razorpay/create-order")
 async def create_razorpay_order(
     plan: str = Query(..., description="Plan type: small, medium, or weekly"),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user = Depends(get_current_user)
 ):
     """Create a Razorpay order"""
     try:
         # Create order with Razorpay
         order_data = razorpay_service.create_order(plan, current_user.id)
         
-        # Create payment record
-        payment = Payment(
-            user_id=current_user.id,
-            amount=order_data["amount"] / 100,  # Convert paise to rupees
-            currency="INR",
-            status="pending",
-            credits_purchased=order_data["credits"],
-            product_type=plan,
-            razorpay_order_id=order_data["order_id"]
-        )
-        db.add(payment)
-        db.commit()
-        db.refresh(payment)
+        # Store payment record in Supabase
+        supabase = get_supabase()
+        payment_record = {
+            "user_id": current_user.id,
+            "amount": order_data["amount"] / 100,  # Convert paise to rupees
+            "currency": "INR",
+            "status": "pending",
+            "credits_purchased": order_data["credits"],
+            "product_type": plan,
+            "razorpay_order_id": order_data["order_id"],
+            "created_at": datetime.utcnow().isoformat()
+        }
+        
+        result = supabase.table('payments').insert(payment_record).execute()
+        payment_id = result.data[0]['id'] if result.data else None
         
         return {
             "order_id": order_data["order_id"],
@@ -1022,7 +1023,7 @@ async def create_razorpay_order(
             "key_id": settings.RAZORPAY_KEY_ID,
             "name": order_data["name"],
             "description": order_data["description"],
-            "payment_id": payment.id
+            "payment_id": payment_id
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -1031,48 +1032,55 @@ async def create_razorpay_order(
 
 @app.post("/razorpay/verify-payment")
 async def verify_razorpay_payment(
-    order_id: str,
-    payment_id: str,
-    signature: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    order_id: str = Query(...),
+    payment_id: str = Query(...),
+    signature: str = Query(...),
+    current_user = Depends(get_current_user)
 ):
     """Verify Razorpay payment and credit user"""
     # Verify signature
     if not razorpay_service.verify_payment_signature(order_id, payment_id, signature):
         raise HTTPException(status_code=400, detail="Invalid payment signature")
     
-    # Find payment record
-    payment = db.query(Payment).filter(
-        Payment.razorpay_order_id == order_id,
-        Payment.user_id == current_user.id
-    ).first()
+    supabase = get_supabase()
     
-    if not payment:
+    # Find payment record
+    payment_result = supabase.table('payments').select('*').eq('razorpay_order_id', order_id).eq('user_id', current_user.id).execute()
+    
+    if not payment_result.data:
         raise HTTPException(status_code=404, detail="Payment not found")
     
-    if payment.status == "completed":
-        return {"status": "already_processed", "credits": current_user.credits}
+    payment = payment_result.data[0]
     
-    # Update payment
-    payment.status = "completed"
-    payment.completed_at = datetime.utcnow()
-    payment.razorpay_payment_id = payment_id
+    if payment['status'] == "completed":
+        # Get current user credits
+        user_result = supabase.table('users').select('credits').eq('id', current_user.id).single().execute()
+        return {"status": "already_processed", "credits": user_result.data['credits']}
+    
+    # Update payment status
+    supabase.table('payments').update({
+        "status": "completed",
+        "completed_at": datetime.utcnow().isoformat(),
+        "razorpay_payment_id": payment_id
+    }).eq('id', payment['id']).execute()
     
     # Add credits to user
-    current_user.credits += payment.credits_purchased
+    user_result = supabase.table('users').select('credits').eq('id', current_user.id).single().execute()
+    current_credits = user_result.data['credits']
+    new_credits = current_credits + payment['credits_purchased']
     
-    db.commit()
-    db.refresh(current_user)
+    supabase.table('users').update({
+        "credits": new_credits
+    }).eq('id', current_user.id).execute()
     
     return {
         "status": "success",
-        "credits": current_user.credits,
-        "credits_added": payment.credits_purchased
+        "credits": new_credits,
+        "credits_added": payment['credits_purchased']
     }
 
 @app.post("/webhook/razorpay")
-async def razorpay_webhook(request: Request, db: Session = Depends(get_db)):
+async def razorpay_webhook(request: Request):
     """Handle Razorpay webhook events"""
     payload = await request.body()
     sig_header = request.headers.get('x-razorpay-signature')
@@ -1083,6 +1091,8 @@ async def razorpay_webhook(request: Request, db: Session = Depends(get_db)):
     # Verify webhook signature
     if not razorpay_service.verify_webhook_signature(payload, sig_header):
         raise HTTPException(status_code=400, detail="Invalid signature")
+    
+    supabase = get_supabase()
     
     try:
         event = json.loads(payload)
@@ -1095,21 +1105,26 @@ async def razorpay_webhook(request: Request, db: Session = Depends(get_db)):
             payment_id = payment_entity.get('id')
             
             # Find payment record
-            payment = db.query(Payment).filter(
-                Payment.razorpay_order_id == order_id
-            ).first()
+            payment_result = supabase.table('payments').select('*').eq('razorpay_order_id', order_id).execute()
             
-            if payment and payment.status == "pending":
-                payment.status = "completed"
-                payment.completed_at = datetime.utcnow()
-                payment.razorpay_payment_id = payment_id
+            if payment_result.data:
+                payment = payment_result.data[0]
                 
-                # Add credits to user
-                user = db.query(User).filter(User.id == payment.user_id).first()
-                if user:
-                    user.credits += payment.credits_purchased
-                
-                db.commit()
+                if payment['status'] == "pending":
+                    # Update payment status
+                    supabase.table('payments').update({
+                        "status": "completed",
+                        "completed_at": datetime.utcnow().isoformat(),
+                        "razorpay_payment_id": payment_id
+                    }).eq('id', payment['id']).execute()
+                    
+                    # Add credits to user
+                    user_result = supabase.table('users').select('credits').eq('id', payment['user_id']).single().execute()
+                    if user_result.data:
+                        new_credits = user_result.data['credits'] + payment['credits_purchased']
+                        supabase.table('users').update({
+                            "credits": new_credits
+                        }).eq('id', payment['user_id']).execute()
         
         elif event_type == 'payment.failed':
             # Payment failed
@@ -1117,13 +1132,12 @@ async def razorpay_webhook(request: Request, db: Session = Depends(get_db)):
             order_id = payment_entity.get('order_id')
             
             # Find and update payment record
-            payment = db.query(Payment).filter(
-                Payment.razorpay_order_id == order_id
-            ).first()
+            payment_result = supabase.table('payments').select('*').eq('razorpay_order_id', order_id).execute()
             
-            if payment:
-                payment.status = "failed"
-                db.commit()
+            if payment_result.data:
+                supabase.table('payments').update({
+                    "status": "failed"
+                }).eq('id', payment_result.data[0]['id']).execute()
         
         return {"status": "success"}
     except Exception as e:
