@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Copy, Check } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import { aiAPI } from '../../api'
-import axios from 'axios'
+import api, { aiAPI } from '../../api'
 
 function ConversationView({ updateCredits }) {
   const { contactId } = useParams()
@@ -108,28 +107,11 @@ function ConversationView({ updateCredits }) {
 
     setUpdating(true);
     try {
-      // Get Supabase session token
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session?.access_token) {
-        alert('You must be logged in to update conversations')
-        setUpdating(false)
-        return
-      }
-
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const response = await axios.post(
-        `${API_BASE_URL}/conversations/update`,
-        {
-          contact_id: parseInt(contactId),
-          chat_log: chatLog
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`
-          }
-        }
-      );
+      // Use API client (auth token added automatically by interceptor)
+      const response = await api.post('/conversations/update', {
+        contact_id: parseInt(contactId),
+        chat_log: chatLog
+      });
       
       setConversation(response.data);
       setMessages(response.data.messages || []);
@@ -205,20 +187,12 @@ function ConversationView({ updateCredits }) {
     if (!selectedReplyType || !conversation) return;
     
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      await axios.post(
-        `${API_BASE_URL}/track-outcome`,
-        {
-          conversation_id: conversation.id,
-          reply_type: selectedReplyType,
-          outcome: outcome
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-          }
-        }
-      );
+      // Use API client (auth token added automatically by interceptor)
+      await api.post('/track-outcome', {
+        conversation_id: conversation.id,
+        reply_type: selectedReplyType,
+        outcome: outcome
+      });
     } catch (error) {
       console.error('Failed to track outcome:', error);
     }

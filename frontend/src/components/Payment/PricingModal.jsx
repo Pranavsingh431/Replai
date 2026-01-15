@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { CreditCard, Check, Smartphone } from 'lucide-react'
 import Modal from '../Common/Modal'
-import { paymentsAPI } from '../../api'
+import api, { paymentsAPI } from '../../api'
 import { supabase } from '../../lib/supabase'
-import axios from 'axios'
 
 function PricingModal({ isOpen, onClose }) {
   const [razorpayProducts, setRazorpayProducts] = useState([])
@@ -48,27 +47,10 @@ function PricingModal({ isOpen, onClose }) {
     setSelectedProduct(productId)
 
     try {
-      // Get Supabase session token
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session?.access_token) {
-        alert('You must be logged in to purchase credits')
-        setLoading(false)
-        return
-      }
-
-      // Create Razorpay order
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const response = await axios.post(
-        `${API_BASE_URL}/razorpay/create-order`,
-        null,
-        {
-          params: { plan: productId },
-          headers: {
-            Authorization: `Bearer ${session.access_token}`
-          }
-        }
-      )
+      // Create Razorpay order (auth token added automatically by interceptor)
+      const response = await api.post('/razorpay/create-order', null, {
+        params: { plan: productId }
+      })
 
       const orderData = response.data
 
@@ -84,24 +66,14 @@ function PricingModal({ isOpen, onClose }) {
         handler: async function (razorpayResponse) {
           // Payment successful, verify on backend
           try {
-            // Get fresh session token
-            const { data: { session: currentSession } } = await supabase.auth.getSession()
-            
-            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-            await axios.post(
-              `${API_BASE_URL}/razorpay/verify-payment`,
-              null,
-              {
-                params: {
-                  order_id: razorpayResponse.razorpay_order_id,
-                  payment_id: razorpayResponse.razorpay_payment_id,
-                  signature: razorpayResponse.razorpay_signature
-                },
-                headers: {
-                  Authorization: `Bearer ${currentSession.access_token}`
-                }
+            // Verify payment (auth token added automatically by interceptor)
+            await api.post('/razorpay/verify-payment', null, {
+              params: {
+                order_id: razorpayResponse.razorpay_order_id,
+                payment_id: razorpayResponse.razorpay_payment_id,
+                signature: razorpayResponse.razorpay_signature
               }
-            )
+            })
 
             // Success!
             alert('Payment successful! Credits have been added to your account.')
