@@ -46,6 +46,12 @@ from config import settings
 
 app = FastAPI(title="Replai API", description="AI-powered conversation assistant")
 
+# Health check endpoint (no auth, no database)
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring and load balancers"""
+    return {"status": "ok"}
+
 # CORS middleware - must be configured before routes
 app.add_middleware(
     CORSMiddleware,
