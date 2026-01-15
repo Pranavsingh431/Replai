@@ -56,12 +56,12 @@ function PricingModal({ isOpen, onClose }) {
 
       // Open Razorpay checkout
       const options = {
-        key: orderData.razorpay_key_id,
+        key: orderData.key_id,
         order_id: orderData.order_id,
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'Replai',
-        description: orderData.name || 'Credits Purchase',
+        description: orderData.description,
         image: '', // Add your logo URL here
         handler: async function (razorpayResponse) {
           // Payment successful, verify on backend
