@@ -56,31 +56,21 @@ function PricingModal({ isOpen, onClose }) {
 
       // Open Razorpay checkout
       const options = {
-        key: orderData.key_id,
+        key: orderData.razorpay_key_id,
         order_id: orderData.order_id,
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'Replai',
-        description: orderData.description,
+        description: 'Conversation AI credits',
         image: '', // Add your logo URL here
         handler: async function (razorpayResponse) {
-          // Payment successful, verify on backend
-          try {
-            // Verify payment (auth token added automatically by interceptor)
-            await api.post('/razorpay/verify-payment', null, {
-              params: {
-                order_id: razorpayResponse.razorpay_order_id,
-                payment_id: razorpayResponse.razorpay_payment_id,
-                signature: razorpayResponse.razorpay_signature
-              }
-            })
-
-            // Success!
-            alert('Payment successful! Credits have been added to your account.')
-            window.location.reload()
-          } catch (error) {
-            alert('Payment verification failed: ' + (error.response?.data?.detail || error.message))
-          }
+          // Payment successful
+          console.log('Payment successful:', razorpayResponse)
+          alert('Payment successful! Order ID: ' + razorpayResponse.razorpay_order_id)
+          
+          // TODO: Implement payment verification endpoint
+          // For now, just show success and reload
+          window.location.reload()
         },
         prefill: {
           email: '', // Can add user email here
