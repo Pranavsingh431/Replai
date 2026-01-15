@@ -7,6 +7,7 @@ import Signup from './components/Auth/Signup'
 import Dashboard from './components/Dashboard/Dashboard'
 import PaymentSuccess from './components/Payment/PaymentSuccess'
 import PaymentCancel from './components/Payment/PaymentCancel'
+import AuthCallback from './pages/AuthCallback'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -33,6 +34,9 @@ function AppRoutes() {
     <Router>
       <Routes>
         <Route path="/" element={<Landing />} />
+        
+        {/* Auth Callback (Public - No Auth Guard) */}
+        <Route path="/auth/callback" element={<AuthCallback />} />
         
         <Route 
           path="/app" 
