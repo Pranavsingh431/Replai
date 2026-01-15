@@ -1,6 +1,7 @@
 import razorpay
 import hmac
 import hashlib
+import time
 from config import settings
 
 class RazorpayService:
@@ -36,10 +37,14 @@ class RazorpayService:
         
         pricing = self.PRICING[plan]
         
+        # Generate short receipt (max 40 chars - Razorpay requirement)
+        # Format: replai_<timestamp> (e.g., replai_1736611234)
+        receipt = f"replai_{int(time.time())}"
+        
         order_data = {
             "amount": pricing["amount"],
             "currency": "INR",
-            "receipt": f"order_{user_id}_{plan}",
+            "receipt": receipt,
             "payment_capture": 1,  # Auto-capture payment
             "notes": {
                 "user_id": str(user_id),
@@ -48,15 +53,19 @@ class RazorpayService:
             }
         }
         
-        order = self.client.order.create(data=order_data)
-        return {
-            "order_id": order["id"],
-            "amount": pricing["amount"],
-            "currency": "INR",
-            "name": pricing["name"],
-            "description": pricing["description"],
-            "credits": pricing["credits"]
-        }
+        try:
+            order = self.client.order.create(data=order_data)
+            return {
+                "order_id": order["id"],
+                "amount": pricing["amount"],
+                "currency": "INR",
+                "name": pricing["name"],
+                "description": pricing["description"],
+                "credits": pricing["credits"]
+            }
+        except Exception as e:
+            # Raise a clear error if Razorpay order creation fails
+            raise ValueError(f"Failed to create Razorpay order: {str(e)}")
     
     def verify_payment_signature(self, order_id: str, payment_id: str, signature: str) -> bool:
         """Verify Razorpay payment signature"""
