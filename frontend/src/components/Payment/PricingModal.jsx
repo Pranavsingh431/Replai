@@ -1,30 +1,47 @@
 import React, { useState, useEffect } from 'react'
 import { CreditCard, Check, Smartphone } from 'lucide-react'
 import Modal from '../Common/Modal'
-import api, { paymentsAPI } from '../../api'
+import api from '../../api'
 import { supabase } from '../../lib/supabase'
 
+// Static pricing plans - always show these, regardless of API
+const RAZORPAY_PLANS = [
+  {
+    id: 'small',
+    name: 'Small Pack',
+    description: '20 AI replies',
+    amount: 9900,
+    price_display: '₹99',
+    credits: 20
+  },
+  {
+    id: 'medium',
+    name: 'Medium Pack',
+    description: '100 AI replies',
+    amount: 19900,
+    price_display: '₹199',
+    credits: 100
+  },
+  {
+    id: 'large',
+    name: 'Large Pack',
+    description: 'Unlimited replies',
+    amount: 39900,
+    price_display: '₹399',
+    credits: -1
+  }
+]
+
 function PricingModal({ isOpen, onClose }) {
-  const [razorpayProducts, setRazorpayProducts] = useState([])
   const [loading, setLoading] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [paymentMethod, setPaymentMethod] = useState('razorpay') // 'razorpay' or 'stripe'
 
   useEffect(() => {
     if (isOpen) {
-      loadProducts()
       loadRazorpayScript()
     }
   }, [isOpen])
-
-  const loadProducts = async () => {
-    try {
-      const response = await paymentsAPI.getProducts()
-      setRazorpayProducts(response.data.razorpay_products || [])
-    } catch (error) {
-      console.error('Failed to load products:', error)
-    }
-  }
 
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
@@ -70,6 +87,8 @@ function PricingModal({ isOpen, onClose }) {
           
           // TODO: Implement payment verification endpoint
           // For now, just show success and reload
+          setLoading(false)
+          setSelectedProduct(null)
           window.location.reload()
         },
         prefill: {
@@ -90,7 +109,13 @@ function PricingModal({ isOpen, onClose }) {
       const rzp = new window.Razorpay(options)
       rzp.open()
     } catch (error) {
-      alert('Failed to create order: ' + (error.response?.data?.detail || error.message))
+      console.error('Failed to create Razorpay order:', error)
+      
+      // Show user-friendly error message
+      const errorMessage = error.response?.data?.detail || error.message || 'Network error. Please check your connection.'
+      alert('Failed to create order: ' + errorMessage)
+      
+      // Reset UI state but keep modal open
       setLoading(false)
       setSelectedProduct(null)
     }
@@ -134,7 +159,7 @@ function PricingModal({ isOpen, onClose }) {
       {paymentMethod === 'razorpay' && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-            {razorpayProducts.map((product) => {
+            {RAZORPAY_PLANS.map((product) => {
               const badge = getProductBadge(product.id)
               const isSelected = selectedProduct === product.id
 
