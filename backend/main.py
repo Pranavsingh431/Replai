@@ -487,7 +487,7 @@ async def add_message(
     
     return message
 
-@app.post("/conversations/bulk-update")
+@app.post("/conversations/update")
 async def bulk_update_conversation(
     data: BulkConversationUpdate,
     current_user = Depends(get_current_user)

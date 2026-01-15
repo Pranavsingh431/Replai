@@ -24,7 +24,7 @@ Replai has been transformed from a hackathon-style demo into a **premium, profes
 
 **New Endpoint:**
 ```
-POST /conversations/bulk-update
+POST /conversations/update
 {
   "contact_id": 1,
   "chat_log": "You: Hey!\nThem: Hi there!"
@@ -169,7 +169,7 @@ async def analyze_conversation_state(chat_log, current_profile):
 
 **New Endpoint: `main.py`**
 ```python
-@app.post("/conversations/bulk-update")
+@app.post("/conversations/update")
 async def bulk_update_conversation(data: BulkConversationUpdate):
     # Parse "You: ...\nThem: ..." format
     # Create/update conversation

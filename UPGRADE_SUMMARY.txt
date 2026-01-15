@@ -24,7 +24,7 @@
    Before: 3 separate LLM calls
    After:  1 combined call
    
-   New endpoint: POST /conversations/bulk-update
+   New endpoint: POST /conversations/update
    New service:  analyze_conversation_state()
    
    Result: 66% faster, 66% cheaper
@@ -185,7 +185,7 @@ Notice:
 
 Backend Changes:
   • openrouter_service.py: New analyze_conversation_state()
-  • main.py: New POST /conversations/bulk-update
+  • main.py: New POST /conversations/update
   • schemas.py: New BulkConversationUpdate model
 
 Frontend Changes:

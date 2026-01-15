@@ -47,7 +47,7 @@ Paste in real conversation
 
 ### Bulk Update Conversation
 ```bash
-POST http://localhost:8000/conversations/bulk-update
+POST http://localhost:8000/conversations/update
 Authorization: Bearer <token>
 
 {
@@ -177,7 +177,7 @@ backend/openrouter_service.py
   - Combines classification + memory in ONE call
 
 backend/main.py
-  - New: POST /conversations/bulk-update
+  - New: POST /conversations/update
   - Parses chat log, creates messages, runs AI
 
 backend/schemas.py

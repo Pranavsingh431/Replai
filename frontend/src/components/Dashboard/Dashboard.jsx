@@ -27,17 +27,22 @@ function Dashboard({ user, onLogout }) {
   useEffect(() => {
     if (user) {
       loadData()
-      
-      // Check if user has seen onboarding tour
-      const hasSeenTour = localStorage.getItem('replai_onboarding_complete')
-      if (!hasSeenTour) {
-        // Delay tour slightly to ensure DOM elements are rendered
-        setTimeout(() => {
-          setRunTour(true)
-        }, 500)
-      }
     }
   }, [user])
+
+  // Start tour only after loading is complete and user is on dashboard route
+  useEffect(() => {
+    if (!loading && user) {
+      const hasSeenTour = localStorage.getItem('replai_onboarding_complete')
+      if (!hasSeenTour) {
+        // Delay tour to ensure DOM elements are fully rendered
+        const tourTimer = setTimeout(() => {
+          setRunTour(true)
+        }, 1000)
+        return () => clearTimeout(tourTimer)
+      }
+    }
+  }, [loading, user])
 
   const loadData = async () => {
     try {
