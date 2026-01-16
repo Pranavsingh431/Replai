@@ -473,11 +473,31 @@ function Landing() {
       {/* Footer */}
       <footer className="border-t border-gray-200 bg-white">
         <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center justify-between text-sm text-gray-500">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-500">
             <div className="flex items-center space-x-3">
               <img src="/replai.png" alt="Replai" className="h-6 w-auto opacity-60" />
-              <span>© 2026</span>
+              <span>© 2026 Replai</span>
             </div>
+            
+            {/* Legal Links */}
+            <div className="flex items-center space-x-6">
+              <a href="/contact" className="hover:text-rose-600 transition-colors">
+                Contact
+              </a>
+              <a href="/terms" className="hover:text-rose-600 transition-colors">
+                Terms
+              </a>
+              <a href="/privacy" className="hover:text-rose-600 transition-colors">
+                Privacy
+              </a>
+              <a href="/refunds" className="hover:text-rose-600 transition-colors">
+                Refunds
+              </a>
+              <a href="/shipping" className="hover:text-rose-600 transition-colors">
+                Shipping
+              </a>
+            </div>
+            
             <div className="flex items-center space-x-6">
               <button
                 onClick={() => navigate('/app')}

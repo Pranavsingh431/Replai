@@ -9,6 +9,13 @@ import PaymentSuccess from './components/Payment/PaymentSuccess'
 import PaymentCancel from './components/Payment/PaymentCancel'
 import AuthCallback from './pages/AuthCallback'
 
+// Legal Pages
+import Contact from './pages/legal/Contact'
+import Terms from './pages/legal/Terms'
+import Privacy from './pages/legal/Privacy'
+import Refunds from './pages/legal/Refunds'
+import Shipping from './pages/legal/Shipping'
+
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
   
@@ -79,6 +86,13 @@ function AppRoutes() {
             </PrivateRoute>
           } 
         />
+        
+        {/* Legal Pages (Public) */}
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/refunds" element={<Refunds />} />
+        <Route path="/shipping" element={<Shipping />} />
       </Routes>
     </Router>
   )
