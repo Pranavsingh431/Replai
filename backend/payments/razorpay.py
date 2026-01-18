@@ -15,18 +15,21 @@ from typing import Dict, Any
 PLANS = {
     "small": {
         "amount": 9900,  # Rs 99
+        "credits": 20,
         "name": "Small Pack",
         "description": "20 AI replies"
     },
     "medium": {
         "amount": 19900,  # Rs 199
+        "credits": 100,
         "name": "Medium Pack",
         "description": "100 AI replies"
     },
     "large": {
         "amount": 39900,  # Rs 399
+        "credits": 700,
         "name": "Large Pack",
-        "description": "Unlimited replies"
+        "description": "Unlimited credits for 7 days"
     }
 }
 

@@ -55,31 +55,33 @@ function Dashboard({ user, onLogout }) {
 
       if (userError) {
         if (userError.code === 'PGRST116') {
-          // User doesn't exist in users table, create it
-          console.log('User profile not found, creating...')
-          const { data: newUser, error: createError } = await supabase
+          // User doesn't exist in users table yet
+          // The database trigger should create it automatically
+          console.log('User profile not found, waiting for trigger...')
+          
+          // Wait a moment for the trigger to complete
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          
+          // Retry fetch
+          const { data: retryData, error: retryError } = await supabase
             .from('users')
-            .insert({
-              id: user.id,
-              email: user.email,
-              full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
-              credits: 10
-            })
-            .select()
+            .select('credits')
+            .eq('id', user.id)
             .single()
-
-          if (createError) {
-            console.error('Error creating user profile:', createError)
-            setCredits(10) // Default
+          
+          if (retryError) {
+            console.error('User still not found after retry:', retryError)
+            // Fallback: display 0 credits (should not normally happen)
+            setCredits(0)
           } else {
-            setCredits(newUser?.credits || 10)
+            setCredits(retryData?.credits || 0)
           }
         } else {
           console.error('Error fetching user data:', userError)
-          setCredits(10) // Default
+          setCredits(0)
         }
       } else {
-        setCredits(userData?.credits || 10)
+        setCredits(userData?.credits || 0)
       }
 
       // Fetch contacts from Supabase

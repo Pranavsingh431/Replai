@@ -25,10 +25,11 @@ const RAZORPAY_PLANS = [
   {
     id: 'large',
     name: 'Large Pack',
-    description: 'Unlimited replies',
+    description: 'Unlimited credits for 7 days',
+    subtext: 'Unlimited AI replies for 7 days from the time of purchase.',
     amount: 39900,
     price_display: '₹399',
-    credits: -1
+    credits: 700
   }
 ]
 
@@ -81,15 +82,35 @@ function PricingModal({ isOpen, onClose }) {
         description: 'Conversation AI credits',
         image: '', // Add your logo URL here
         handler: async function (razorpayResponse) {
-          // Payment successful
-          console.log('Payment successful:', razorpayResponse)
-          alert('Payment successful! Order ID: ' + razorpayResponse.razorpay_order_id)
-          
-          // TODO: Implement payment verification endpoint
-          // For now, just show success and reload
-          setLoading(false)
-          setSelectedProduct(null)
-          window.location.reload()
+          // Payment successful - verify on backend
+          try {
+            console.log('Payment successful, verifying...', razorpayResponse)
+            
+            // Verify payment and credit account
+            const verifyResponse = await api.post('/razorpay/verify-payment', null, {
+              params: {
+                order_id: razorpayResponse.razorpay_order_id,
+                payment_id: razorpayResponse.razorpay_payment_id,
+                signature: razorpayResponse.razorpay_signature,
+                plan: productId
+              }
+            })
+            
+            const { credits, credits_added } = verifyResponse.data
+            
+            // Success!
+            alert(`Payment successful! ${credits_added} credits added to your account. Total credits: ${credits}`)
+            setLoading(false)
+            setSelectedProduct(null)
+            
+            // Reload to refresh credit display
+            window.location.reload()
+          } catch (error) {
+            console.error('Payment verification failed:', error)
+            alert('Payment verification failed. Please contact support if credits were not added: contact@evizenai.com')
+            setLoading(false)
+            setSelectedProduct(null)
+          }
         },
         prefill: {
           email: '', // Can add user email here
@@ -191,14 +212,22 @@ function PricingModal({ isOpen, onClose }) {
                       </span>
                     </div>
 
-                    <p className="text-sm text-gray-600 mb-4">
+                    <p className="text-sm text-gray-600 mb-2">
                       {product.description}
                     </p>
+                    
+                    {product.subtext && (
+                      <p className="text-xs text-gray-500 mb-4 px-2">
+                        {product.subtext}
+                      </p>
+                    )}
+                    
+                    {!product.subtext && <div className="mb-4" />}
 
                     <div className="space-y-2 mb-6">
                       <div className="flex items-center justify-center space-x-2 text-sm text-gray-700">
                         <Check className="w-4 h-4 text-rose-600" />
-                        <span>{product.credits === -1 ? 'Unlimited' : product.credits} credits</span>
+                        <span>{product.credits} credits</span>
                       </div>
                       <div className="flex items-center justify-center space-x-2 text-sm text-gray-700">
                         <Check className="w-4 h-4 text-rose-600" />

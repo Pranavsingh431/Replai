@@ -1020,6 +1020,77 @@ async def create_razorpay_order(
 #     """Verify Razorpay payment and credit user"""
 #     pass
 
+@app.post("/razorpay/verify-payment")
+async def verify_razorpay_payment(
+    order_id: str = Query(...),
+    payment_id: str = Query(...),
+    signature: str = Query(...),
+    plan: str = Query(...),
+    current_user = Depends(get_current_user)
+):
+    """Verify Razorpay payment and credit user account"""
+    import hmac
+    import hashlib
+    from supabase_client import get_supabase
+    from payments.razorpay import PLANS
+    
+    supabase = get_supabase()
+    
+    # Verify payment signature
+    key_secret = settings.RAZORPAY_KEY_SECRET
+    message = f"{order_id}|{payment_id}"
+    expected_signature = hmac.new(
+        key_secret.encode(),
+        message.encode(),
+        hashlib.sha256
+    ).hexdigest()
+    
+    if not hmac.compare_digest(expected_signature, signature):
+        raise HTTPException(status_code=400, detail="Invalid payment signature")
+    
+    # Get plan details
+    if plan not in PLANS:
+        raise HTTPException(status_code=400, detail="Invalid plan")
+    
+    plan_data = PLANS[plan]
+    credits_to_add = plan_data['credits']
+    
+    # Get current user credits
+    user_result = supabase.table('users').select('credits').eq('id', current_user.id).single().execute()
+    
+    if not user_result.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    current_credits = user_result.data['credits']
+    new_credits = current_credits + credits_to_add
+    
+    # Update user credits
+    supabase.table('users').update({
+        'credits': new_credits
+    }).eq('id', current_user.id).execute()
+    
+    # Store payment record
+    payment_record = {
+        'user_id': current_user.id,
+        'amount': plan_data['amount'] / 100,  # Convert paise to rupees
+        'currency': 'INR',
+        'status': 'completed',
+        'credits_purchased': credits_to_add,
+        'product_type': plan,
+        'razorpay_order_id': order_id,
+        'razorpay_payment_id': payment_id,
+        'created_at': datetime.utcnow().isoformat(),
+        'completed_at': datetime.utcnow().isoformat()
+    }
+    
+    supabase.table('payments').insert(payment_record).execute()
+    
+    return {
+        'status': 'success',
+        'credits': new_credits,
+        'credits_added': credits_to_add
+    }
+
 # TODO: Implement webhook endpoint (webhooks will be added later)
 # @app.post("/webhook/razorpay")
 # async def razorpay_webhook(request: Request):
