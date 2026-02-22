@@ -1,19 +1,33 @@
-# Replai - AI-Powered Conversation Assistant
+# Replai – AI Conversation Assistant
 
-Replai helps you write the right thing when it matters most. Get AI-powered reply suggestions for dating, networking, and high-stakes conversations.
+Replai is a full-stack AI-powered conversation assistant designed to generate context-aware replies for high-stakes conversations (dating, networking, professional outreach).
 
-![Replai](./replai.png)
+It combines LLM-based reply generation, persistent conversation memory, credit-based monetization, and secure authentication into a production-style SaaS architecture.
+
+### Key Capabilities
+
+- Context-aware reply generation across multiple tone strategies (Safe, Flirty, Bold)
+- Persistent conversation memory per contact
+- Credit-based monetization system with pay-as-you-go and subscription tiers
+- Secure authentication — Email + Google OAuth via Supabase
+- Razorpay payment integration (UPI, Cards, Wallets, Netbanking)
+- Full-stack architecture — FastAPI + React + Supabase
 
 ---
 
-## ✨ Features
+## Architecture Overview
 
-- 🤖 **AI-Powered Replies** - Get 3 reply suggestions (Safe, Flirty, Bold) tailored to your conversation
-- 💬 **Conversation Memory** - AI remembers context and suggests replies that move things forward
-- 👤 **Contact Management** - Track multiple conversations with personalized insights
-- 💳 **Flexible Pricing** - Pay-as-you-go credits or unlimited weekly access
-- 🔐 **Secure Auth** - Email/password or Google OAuth via Supabase
-- 🎨 **Premium UI** - Clean, warm, romantic design built with React + Tailwind
+```
+Frontend (React + Vite)
+        ↓
+FastAPI Backend
+        ↓
+LLM API (OpenRouter — Claude 3.5 Haiku / Sonnet)
+        ↓
+Supabase (PostgreSQL + Auth + Row Level Security)
+        ↓
+Razorpay (Payments)
+```
 
 ---
 
@@ -29,7 +43,7 @@ Replai helps you write the right thing when it matters most. Get AI-powered repl
 ### 1. Clone the Repository
 ```bash
 git clone <your-repo-url>
-cd Dating
+cd replai
 ```
 
 ### 2. Backend Setup
@@ -39,7 +53,6 @@ python3 -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
-# Create .env from template
 cp .env.example .env
 # Edit .env with your actual keys
 ```
@@ -49,22 +62,21 @@ cp .env.example .env
 cd frontend
 npm install
 
-# Create .env from template
 cp .env.example .env
 # Edit .env with your actual keys
 ```
 
 ### 4. Database Setup
 1. Create a Supabase project at https://supabase.com
-2. Go to SQL Editor in Supabase Dashboard
-3. Copy and run the contents of `backend/supabase_schema.sql`
+2. Go to SQL Editor in the Supabase Dashboard
+3. Run the contents of `backend/supabase_schema.sql`
 
 ### 5. Start Development Servers
 ```bash
-# Terminal 1 - Backend
+# Terminal 1 — Backend
 cd backend && source venv/bin/activate && python main.py
 
-# Terminal 2 - Frontend
+# Terminal 2 — Frontend
 cd frontend && npm run dev
 ```
 
@@ -103,90 +115,62 @@ See `.env.example` files for complete templates.
 ## 📖 Tech Stack
 
 ### Frontend
-- **React 18** - UI library
-- **Vite** - Build tool
-- **Tailwind CSS** - Styling
-- **Supabase JS** - Authentication & database
-- **React Router** - Routing
-- **Lucide React** - Icons
+- **React 18** — UI library
+- **Vite** — Build tool
+- **Tailwind CSS** — Styling
+- **Supabase JS** — Authentication & database client
+- **React Router** — Routing
+- **Lucide React** — Icons
 
 ### Backend
-- **FastAPI** - Python web framework
-- **Supabase** - Database & authentication
-- **OpenRouter** - AI model API
-- **Razorpay** - Payment processing (India)
-- **Pydantic** - Data validation
+- **FastAPI** — Python web framework
+- **Supabase** — Database & authentication
+- **OpenRouter** — LLM API (Claude 3.5 Haiku / Sonnet)
+- **Razorpay** — Payment processing
+- **Pydantic** — Data validation
 
 ### Database & Auth
-- **Supabase (PostgreSQL)** - Database with RLS
-- **Supabase Auth** - Email + Google OAuth
+- **Supabase (PostgreSQL)** — Database with Row Level Security
+- **Supabase Auth** — Email + Google OAuth
 
 ---
 
 ## 🗄️ Database Schema
 
-### Tables
-- `users` - User profiles, credits, preferences
-- `contacts` - Saved contacts with conversation history
-- `conversations` - Conversation state and analysis
-- `messages` - Individual messages in conversations
-- `payments` - Payment history and credits
-
-All tables have **Row Level Security (RLS)** enabled. Users can only access their own data.
+The schema covers five core tables: `users` (profiles, credits, preferences), `contacts` (saved contacts with conversation history), `conversations` (state and analysis), `messages` (individual messages), and `payments` (transaction history and credit ledger). All tables have Row Level Security enabled — users can only access their own data.
 
 ---
 
 ## 🔐 Authentication
 
-### Email + Password
-1. Sign up at `/app/signup`
-2. Supabase creates auth user
-3. Automatic profile creation via trigger
-4. 10 free credits awarded
+**Email + Password** — Sign up at `/app/signup`. Supabase creates the auth user, a profile trigger fires automatically, and 10 free credits are awarded.
 
-### Google OAuth
-1. Click "Continue with Google"
-2. OAuth consent via Supabase
-3. Auto-login or sign-up
-4. Redirect to dashboard
+**Google OAuth** — One-click OAuth consent via Supabase. Handles both new sign-ups and returning users, with redirect back to the dashboard.
 
-### Session Persistence
-- Sessions stored in Supabase
-- Auto-refresh on token expiry
-- Persistent across page refresh
+Sessions are stored in Supabase with automatic JWT refresh and persistence across page reloads.
 
 ---
 
 ## 💳 Payment Integration
 
 ### Razorpay (India)
-- **Small Pack**: ₹99 for 20 credits
-- **Medium Pack**: ₹399 for 100 credits
-- **Weekly Unlimited**: ₹699 for unlimited replies (7 days)
+- **Small Pack** — ₹99 for 20 credits
+- **Medium Pack** — ₹399 for 100 credits
+- **Weekly Unlimited** — ₹699 for unlimited replies (7 days)
 
-Supports UPI, Cards, Wallets, Netbanking.
+Supports UPI, Cards, Wallets, and Netbanking.
 
-### Stripe (International) - Coming Soon
-Placeholder for international credit card payments.
-
----
-
-## 🤖 AI Models
-
-### OpenRouter API
-- **Claude 3.5 Haiku** - Fast classification and memory updates
-- **Claude 3.5 Sonnet** - Profile analysis and reply generation
+### Stripe (International) — Coming Soon
 
 ---
 
 ## 📁 Project Structure
 
 ```
-Dating/
+replai/
 ├── backend/
 │   ├── main.py              # FastAPI app
 │   ├── config.py            # Environment config
-│   ├── models.py            # Database models (legacy)
 │   ├── supabase_client.py   # Supabase client
 │   ├── supabase_schema.sql  # Database schema
 │   ├── razorpay_service.py  # Payment processing
@@ -197,117 +181,32 @@ Dating/
 │   ├── src/
 │   │   ├── components/      # React components
 │   │   ├── contexts/        # Auth context
-│   │   ├── lib/            # Supabase client
-│   │   ├── api.js          # API utilities
-│   │   └── App.jsx         # Main app
-│   ├── .env.example        # Environment template
-│   └── package.json        # Node dependencies
+│   │   ├── lib/             # Supabase client
+│   │   ├── api.js           # API utilities
+│   │   └── App.jsx          # Main app
+│   ├── .env.example         # Environment template
+│   └── package.json         # Node dependencies
 │
-├── .gitignore              # Git ignore rules
-├── README.md               # This file
-└── GITHUB_READY.md         # Deployment guide
+├── .gitignore
+└── README.md
 ```
-
----
-
-## 🧪 Testing
-
-### Manual Testing Checklist
-- [ ] Sign up with email/password
-- [ ] Sign up with Google
-- [ ] Create a contact
-- [ ] Paste conversation
-- [ ] Generate AI replies
-- [ ] Copy reply
-- [ ] Buy credits (Razorpay)
-- [ ] Log out and log back in
-- [ ] Session persists across refresh
-
----
-
-## 🚀 Deployment
-
-### Prerequisites
-- Supabase project (production)
-- Domain with HTTPS
-- Environment variables configured
-
-### Steps
-1. Run `supabase_schema.sql` in production Supabase
-2. Configure Google OAuth redirect URLs for production
-3. Set environment variables in hosting platform
-4. Deploy backend (Railway, Render, etc.)
-5. Deploy frontend (Vercel, Netlify, etc.)
-6. Test authentication flows
-7. Configure Razorpay webhooks
-
-See `GITHUB_READY.md` for detailed deployment instructions.
 
 ---
 
 ## 🔒 Security
 
-### Environment Variables
-- ✅ All secrets in `.env` files
-- ✅ `.env` files in `.gitignore`
-- ✅ No hardcoded API keys
-- ✅ `.env.example` for setup guidance
-
-### Database Security
-- ✅ Row Level Security (RLS) on all tables
-- ✅ Users can only access their own data
-- ✅ Service role key only used in backend
-- ✅ Anon key only used in frontend
-
-### Authentication
-- ✅ Supabase Auth (industry-standard)
-- ✅ JWT tokens with auto-refresh
-- ✅ Google OAuth via Supabase
-- ✅ No passwords stored in application code
+All secrets live in `.env` files excluded from version control. The Supabase service role key is backend-only; the anon key is frontend-only. Row Level Security enforces data isolation at the database level. Authentication uses Supabase Auth with JWT auto-refresh — no passwords stored in application code.
 
 ---
 
-## 🤝 Contributing
+## 🚀 Deployment
 
-### Setup
-1. Fork the repository
-2. Clone your fork
-3. Create your own Supabase project
-4. Get your own API keys (don't ask for others')
-5. Follow Quick Start guide
-6. Make changes
-7. Submit pull request
-
-### Guidelines
-- Use environment variables for secrets
-- Follow existing code style
-- Test authentication before submitting
-- Document new environment variables in `.env.example`
-
----
-
-## 📄 License
-
-[Add your license here]
-
----
-
-## 🙏 Acknowledgments
-
-- **Supabase** - Database and authentication
-- **OpenRouter** - AI model API
-- **Razorpay** - Payment processing
-- **Tailwind CSS** - Styling framework
-- **Lucide** - Icon library
-
----
-
-## 📞 Support
-
-For issues or questions:
-1. Check `GITHUB_READY.md` troubleshooting section
-2. Review Supabase documentation
-3. Open an issue on GitHub
+1. Run `supabase_schema.sql` in your production Supabase project
+2. Configure Google OAuth redirect URLs for your production domain
+3. Set environment variables in your hosting platform
+4. Deploy backend (Railway, Render, Fly.io)
+5. Deploy frontend (Vercel, Netlify)
+6. Configure Razorpay webhooks
 
 ---
 
@@ -319,10 +218,21 @@ For issues or questions:
 - [x] Razorpay payment integration
 - [ ] Stripe international payments
 - [ ] Mobile app (React Native)
-- [ ] More AI models
 - [ ] Conversation templates
 - [ ] Export conversation history
 
 ---
 
-**Built with ❤️ for better conversations**
+## 🤝 Contributing
+
+Fork the repository, create your own Supabase project and API keys, follow the Quick Start guide, and open a pull request. Document any new environment variables in the relevant `.env.example` file.
+
+---
+
+## 🙏 Acknowledgments
+
+Supabase · OpenRouter · Razorpay · Tailwind CSS · Lucide
+
+---
+
+**Built for better conversations.**
