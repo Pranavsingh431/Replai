@@ -1,5 +1,7 @@
 # Replai – AI Conversation Assistant
 
+![Replai](./replai.png)
+
 Replai is a full-stack AI-powered conversation assistant designed to generate context-aware replies for high-stakes conversations (dating, networking, professional outreach).
 
 It combines LLM-based reply generation, persistent conversation memory, credit-based monetization, and secure authentication into a production-style SaaS architecture.
